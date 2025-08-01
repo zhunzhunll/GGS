@@ -54,6 +54,23 @@
             margin-left: 10px;
             width: 60%;
         }
+        .level-selector {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .level-selector button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            background-color: #ddd;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .level-selector button.active {
+            background-color: #094488;
+            color: white;
+        }
         .departments {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -262,17 +279,41 @@
             background-color: #2ecc71;
             color: white;
         }
+        /* 单个专业详情样式 */
+        .major-detail {
+            margin-top: 20px;
+            padding: 15px;
+			font-size: 20px;
+            /* background-color: #f5f5f5;
+            border-radius: 5px;
+            border-left: 4px solid #3498db; */
+        }
+        .view-single-btn {
+            /* background-color: #3498db; */
+            color: black;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <img src="logo.png"/>
+            <img src="img/logo.png"/>
             <h1>广州工商学院专业剩余名额统计系统</h1>
         </header>
 
+        <div class="level-selector">
+            <button id="middleTechBtn" class="active" onclick="switchLevel('middle')">中技层次</button>
+            <button id="highTechBtn" onclick="switchLevel('high')">高技层次</button>
+        </div>
+
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="输入完整专业名称查询剩余名额情况">
+            <input type="text" id="searchInput" placeholder="输入专业名称查询剩余名额情况">
         </div>
         
         <div class="search-box">
@@ -292,6 +333,19 @@
             </div>
         </div>
         
+        <!-- 单个专业详情模态框 -->
+        <div id="detailModal" class="modal" style="padding-top: 80px;">
+            <div class="modal-content">
+                <span class="close" onclick="closeDetailModal()">&times;</span>
+                <div class="modal-header">
+                    <h3 id="detailResultTitle">专业详情</h3>
+                </div>
+                <div class="modal-body" id="detailResultContent">
+                    <!-- 单个专业详情将在这里显示 -->
+                </div>
+            </div>
+        </div>
+        
         <div style="text-align: center;">
             <p style="color: crimson;">注：招生专业剩余名额查询结果仅供参考，实际数据以学校最终统计为主</p>
             <p>最终解释权归广州工商学院所有</p>
@@ -303,6 +357,10 @@
         <!-- 管理员面板 -->
         <div id="adminPanel" class="admin-panel">
             <h2>专业名额管理</h2>
+            <div class="admin-level-selector">
+                <button id="adminMiddleTechBtn" class="active" onclick="switchAdminLevel('middle')">中技层次</button>
+                <button id="adminHighTechBtn" onclick="switchAdminLevel('high')">高技层次</button>
+            </div>
             <div id="majorEditList">
                 <!-- 专业编辑列表将在这里动态生成 -->
             </div>
@@ -318,76 +376,122 @@
 
     <script>
         // 专业数据
-        let majorsData = {
-            "计算机广告制作": { remaining: 4 },
-            "计算机广告制作(视觉传达设计专本直通)": { remaining: 3 },
-            "计算机广告制作(升学特色班)": { remaining: 3 },
-            "计算机广告制作(文化创意方向)": { remaining: 5 },
-            "计算机动画制作": { remaining: 3 },
-            "计算机动画制作(短视频制作技术方向)": { remaining: 4 },
-            "室内设计": { remaining: 4 },
-            "室内设计(预备技师专本直通)": { remaining: 3 },
-            "室内设计(升学特色班)": { remaining: 3 },
-            "室内设计(唐明汉校企合作定向班)": { remaining: 5 },
-            "室内设计(智能家居方向)": { remaining: 5 },
-            "幼儿教育": { remaining: 5 },
-            "幼儿教育(专本直通)": { remaining: 3 },
-            "幼儿教育(国际双语方向)": { remaining: 5 },
-            "幼儿教育(音乐表演方向)": { remaining: 0 },
-            "播音与主持": { remaining: 4 },
-            "工商企业管理": { remaining: 4 },
-            "工商企业管理(专本直通)": { remaining: 3 },
-            "工商企业管理(升学特色班)": { remaining: 3 },
-            "工商企业管理(创业管理方向)": { remaining: 5 },
-            "工商企业管理(国际经济与贸易方向)": { remaining: 4 },
-            "工商企业管理(城际轨道管理方向)": { remaining: 4 },
-            "工商企业管理(旅游酒店管理方向)": { remaining: 5 },
-            "工商企业管理(人力资源管理专本直通)": { remaining: 3 },
-            "市场营销": { remaining: 4 },
-            "市场营销(升学特色班)": { remaining: 3 },
-            "市场营销(大数据营销方向)": { remaining: 5 },
-            "休闲体育服务": { remaining: 3 },
-            "法律事务(警务方向)": { remaining: 3 },
-            "计算机网络应用": { remaining: 4 },
-            "计算机网络应用(升学特色班)": { remaining: 3 },
-            "计算机网络应用(中国高科集团合作班)": { remaining: 5 },
-            "计算机网络应用(网络工程师方向)": { remaining: 3 },
-            "计算机网络应用(移动互联网前端开发方向)": { remaining: 4 },
-            "物联网应用技术(中国高科集团合作班)": { remaining: 5 },
-            "物联网应用技术(人工智能方向)": { remaining: 3 },
-            "物联网应用技术(5G通信应用方向)": { remaining: 3 },
-            "物联网应用技术(嵌入式开发方向)": { remaining: 3 },
-            "大数据应用技术": { remaining: 4 },
-            "大数据应用技术(中国高科集团合作班)": { remaining: 5 },
-            "大数据应用技术(云计算方向)": { remaining: 4 },
-            "会计": { remaining: 3 },
-            "会计(升学特色班)": { remaining: 3 },
-            "会计(财务管理方向)": { remaining: 5 },
-            "金融管理与务实": { remaining: 5 },
-            "金融管理与务实(专本直通)": { remaining: 3 },
-            "金融管理与务实(投资与理财方向)": { remaining: 5 },
-            "商务外语": { remaining: 4 },
-            "商务外语(专本直通)": { remaining: 3 },
-            "商务外语(升学特色班)": { remaining: 3 },
-            "电子商务": { remaining: 3 },
-            "电子商务(预备技师专本直通)": { remaining: 3 },
-            "电子商务(升学特色班)": { remaining: 2 },
-            "电子商务(中国高科集团合作班)": { remaining: 5 },
-            "电子商务(跨境电商方向)": { remaining: 4 },
-            "电子商务(新媒体运营方向)": { remaining: 3 },
-            "电子商务(新零售方向)": { remaining: 5 },
-            "电子商务(电子竞技运动服务与管理方向)": { remaining: 5 },
-            "工程造价": { remaining: 4 },
-            "工程造价(建筑工程管理方向)": { remaining: 4 },
-            "工业机器人应用与维护": { remaining: 3 },
-            "机电一体化": { remaining: 3 },
-            "汽车检测与维修": { remaining: 3 },
-            "新能源汽车检测与维修": { remaining: 8 },
-            "无人机应用技术": { remaining: 3 },
-            "口腔义齿制造(数字化口腔技术方向)": { remaining: 3 },
-            "护理": { remaining: 3 },
-            "中药营养保健": { remaining: 4 },
+        const majorsData = {
+            middle: {
+                "电子商务": { remaining: 3 },
+                "电子商务（国际贸易）": { remaining: 5 },
+                "电子商务（数字化营销）": { remaining: 5 },
+                "工商企业管理": { remaining: 3 },
+                "工商企业管理(财务管理)": { remaining: 4 },
+                "工商企业管理(人力资源管理)": { remaining: 5 },
+                "工商企业管理(现代文秘)": { remaining: 4 },
+                "室内设计": { remaining: 3 },
+                "室内设计（智能家装设计）": { remaining: 3 },
+                "计算机广告制作（动漫设计）": { remaining: 3 },
+                "物联网应用技术": { remaining: 4 },
+                "计算机网络应用": { remaining: 3 },
+                "计算机网络应用(人工智能大模型)": { remaining: 3 },
+                "计算机网络应用(云计算)": { remaining: 4 },
+                "计算机网络应用(无人机技术)": { remaining: 3 },
+                "计算机网络应用(新能源汽车技术)": { remaining: 3 },
+                "计算机网络应用(司法警务)": { remaining: 5 },
+                "口腔义齿制造（数字化口腔技术）": { remaining: 4 },
+                "口腔义齿制造（口腔护理）": { remaining: 3 },
+                "播音与主持": { remaining: 4 },
+                "工程造价": { remaining: 4 },
+                "机电一体化": { remaining: 3 },
+            },
+            high: {
+                "计算机广告制作": { remaining: 4 },
+                "计算机广告制作(视觉传达设计专本直通)": { remaining: 3 },
+                "计算机广告制作(升学特色班)": { remaining: 3 },
+                "计算机广告制作(文化创意方向)": { remaining: 5 },
+                "计算机动画制作": { remaining: 3 },
+                "计算机动画制作(短视频制作技术方向)": { remaining: 4 },
+                "室内设计": { remaining: 4 },
+                "室内设计(预备技师专本直通)": { remaining: 3 },
+                "室内设计(升学特色班)": { remaining: 3 },
+                "室内设计(唐明汉校企合作定向班)": { remaining: 5 },
+                "室内设计(智能家居方向)": { remaining: 5 },
+                "幼儿教育": { remaining: 5 },
+                "幼儿教育(专本直通)": { remaining: 3 },
+                "幼儿教育(国际双语方向)": { remaining: 5 },
+                "幼儿教育(音乐表演方向)": { remaining: 0 },
+                "播音与主持": { remaining: 4 },
+                "工商企业管理": { remaining: 4 },
+                "工商企业管理(专本直通)": { remaining: 3 },
+                "工商企业管理(升学特色班)": { remaining: 3 },
+                "工商企业管理(创业管理方向)": { remaining: 5 },
+                "工商企业管理(国际经济与贸易方向)": { remaining: 4 },
+                "工商企业管理(城际轨道管理方向)": { remaining: 4 },
+                "工商企业管理(旅游酒店管理方向)": { remaining: 5 },
+                "工商企业管理(人力资源管理专本直通)": { remaining: 3 },
+                "市场营销": { remaining: 4 },
+                "市场营销(升学特色班)": { remaining: 3 },
+                "市场营销(大数据营销方向)": { remaining: 5 },
+                "休闲体育服务": { remaining: 3 },
+                "法律事务(警务方向)": { remaining: 3 },
+                "计算机网络应用": { remaining: 4 },
+                "计算机网络应用(升学特色班)": { remaining: 3 },
+                "计算机网络应用(中国高科集团合作班)": { remaining: 5 },
+                "计算机网络应用(网络工程师方向)": { remaining: 3 },
+                "计算机网络应用(移动互联网前端开发方向)": { remaining: 4 },
+                "物联网应用技术(中国高科集团合作班)": { remaining: 5 },
+                "物联网应用技术(人工智能方向)": { remaining: 3 },
+                "物联网应用技术(5G通信应用方向)": { remaining: 3 },
+                "物联网应用技术(嵌入式开发方向)": { remaining: 3 },
+                "大数据应用技术": { remaining: 4 },
+                "大数据应用技术(中国高科集团合作班)": { remaining: 5 },
+                "大数据应用技术(云计算方向)": { remaining: 4 },
+                "会计": { remaining: 3 },
+                "会计(升学特色班)": { remaining: 3 },
+                "会计(财务管理方向)": { remaining: 5 },
+                "金融管理与务实": { remaining: 5 },
+                "金融管理与务实(专本直通)": { remaining: 3 },
+                "金融管理与务实(投资与理财方向)": { remaining: 5 },
+                "商务外语": { remaining: 4 },
+                "商务外语(专本直通)": { remaining: 3 },
+                "商务外语(升学特色班)": { remaining: 3 },
+                "电子商务": { remaining: 3 },
+                "电子商务(预备技师专本直通)": { remaining: 3 },
+                "电子商务(升学特色班)": { remaining: 3 },
+                "电子商务(中国高科集团合作班)": { remaining: 5 },
+                "电子商务(跨境电商方向)": { remaining: 3 },
+                "电子商务(新媒体运营方向)": { remaining: 4 },
+                "电子商务(新零售方向)": { remaining: 4 },
+                "电子商务(电子竞技运动服务与管理方向)": { remaining: 5 },
+                "工程造价": { remaining: 4 },
+                "工程造价(建筑工程管理方向)": { remaining: 4 },
+                "工业机器人应用与维护": { remaining: 3 },
+                "机电一体化": { remaining: 3 },
+                "汽车检测与维修": { remaining: 3 },
+                "新能源汽车检测与维修": { remaining: 8 },
+                "无人机应用技术": { remaining: 3 },
+                "口腔义齿制造(数字化口腔技术方向)": { remaining: 3 },
+                "护理": { remaining: 3 },
+                "中药营养保健": { remaining: 4 },
+            }
         };
+
+        let currentLevel = 'middle';
+        let currentAdminLevel = 'middle';
+
+        // 切换层次
+        function switchLevel(level) {
+            currentLevel = level;
+            document.getElementById('middleTechBtn').classList.remove('active');
+            document.getElementById('highTechBtn').classList.remove('active');
+            document.getElementById(level + 'TechBtn').classList.add('active');
+        }
+
+        // 切换管理员面板层次
+        function switchAdminLevel(level) {
+            currentAdminLevel = level;
+            document.getElementById('adminMiddleTechBtn').classList.remove('active');
+            document.getElementById('adminHighTechBtn').classList.remove('active');
+            document.getElementById('admin' + level.charAt(0).toUpperCase() + level.slice(1) + 'TechBtn').classList.add('active');
+            renderMajorEditList();
+        }
 
         // 显示特定院系的专业列表
         function showMajors(department) {
@@ -403,7 +507,7 @@
             });
         }
 
-        // 搜索专业 - 修改为精确匹配
+        // 搜索专业
         function searchMajor() {
             const input = document.getElementById('searchInput').value.trim();
             if (!input) {
@@ -411,43 +515,88 @@
                 return;
             }
         
-            // 查找完全匹配的专业
-            const exactMatch = majorsData[input];
+            let foundMajors = [];
+            // 在当前层次中搜索
+            for (const [major, data] of Object.entries(majorsData[currentLevel])) {
+                if (major.includes(input)) {
+                    foundMajors.push({major, data});
+                }
+            }
         
-            if (exactMatch) {
+            if (foundMajors.length > 0) {
                 document.getElementById('searchResultTitle').innerHTML = 
-                    `<div style="margin-top: 30px;">专业剩余名额查询结果</div>`;
+                    `<div style="margin-top: 30px;"> <!-- ${currentLevel === 'middle' ? '中技' : '高技'}层次 -->专业剩余名额查询结果如下:</br><span style="color: red;">共找到${foundMajors.length}个相关专业</span>`;
                 
                 let resultHTML = `
                     <div style="margin-top: 25px;">
-                        <div style="margin-bottom: 15px; padding-bottom: 15px;">
-                            <p><strong>专业名称：${input}</strong></p>
-                            <p><strong>剩余名额：${exactMatch.remaining}个</strong></p>
-                        </div>
-                    </div>
                 `;
+                
+                foundMajors.forEach(item => {
+                    resultHTML += `
+                        <div class="view-single-btn" onclick="showSingleMajor('${item.major}')" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+                            <p><strong>专业名称：${item.major}</strong></p>
+                            <p><strong>剩余名额：${item.data.remaining}个</strong></p>
+							<!-- <button class="view-single-btn" onclick="showSingleMajor('${item.major}')">查看详情</button> -->
+                        </div>
+                    `;
+                });
+                
+                resultHTML += `</div>`;
                 
                 document.getElementById('searchResultContent').innerHTML = resultHTML;
                 document.getElementById('searchModal').style.display = 'block';
             } else {
                 document.getElementById('searchResultTitle').innerHTML = 
                     `<span style="color: red;">未找到</span>`;
-                document.getElementById('searchResultContent').textContent = '未找到匹配的专业，请检查输入是否正确（需输入完整专业名称）';
+                document.getElementById('searchResultContent').textContent = `未找到${currentLevel === 'middle' ? '中技' : '高技'}层次匹配的专业，请检查输入是否正确`;
                 document.getElementById('searchModal').style.display = 'block';
             }
         }
 
-        // 关闭模态框
+        // 显示单个专业详情
+        function showSingleMajor(majorName) {
+            const majorData = majorsData[currentLevel][majorName];
+            if (!majorData) return;
+            
+			// document.getElementById('detailResultTitle').textContent = majorName;
+			
+            document.getElementById('detailResultTitle').innerHTML =
+                `<div style="margin-top: 30px;">专业剩余名额查询结果如下:</br><span style="color: red;">共找到1个相关专业</span>`;
+            
+            let detailHTML = `
+			    <div class="major-detail">
+					<p><strong>专业名称：${majorName}</strong></p>
+					<p><strong>剩余名额：${majorData.remaining}个</strong></p>
+					<!-- <p><strong>所属层次：${currentLevel === 'middle' ? '中技' : '高技'}</strong></p> -->
+				</div>
+            `;
+            
+            document.getElementById('detailResultContent').innerHTML = detailHTML;
+            closeModal(); // 关闭搜索结果模态框
+            document.getElementById('detailModal').style.display = 'block';
+        }
+
+        // 关闭搜索结果模态框
         function closeModal() {
             document.getElementById('searchModal').style.display = 'none';
+        }
+
+        // 关闭详情模态框
+        function closeDetailModal() {
+            document.getElementById('detailModal').style.display = 'none';
         }
 
         // 点击模态框外部关闭
         window.onclick = function(event) {
             const modal = document.getElementById('searchModal');
+            const detailModal = document.getElementById('detailModal');
             const adminPanel = document.getElementById('adminPanel');
+            
             if (event.target == modal) {
                 modal.style.display = 'none';
+            }
+            if (event.target == detailModal) {
+                detailModal.style.display = 'none';
             }
             if (event.target == adminPanel) {
                 // 不处理，防止点击面板内部时关闭
@@ -477,7 +626,7 @@
             const container = document.getElementById('majorEditList');
             container.innerHTML = '';
             
-            Object.entries(majorsData).forEach(([major, data], index) => {
+            Object.entries(majorsData[currentAdminLevel]).forEach(([major, data], index) => {
                 const item = document.createElement('div');
                 item.className = 'major-edit-item';
                 item.innerHTML = `
@@ -495,7 +644,7 @@
             const majorInputs = document.querySelectorAll('.major-name-input');
             const remainingInputs = document.querySelectorAll('.major-remaining-input');
             
-            const oldMajor = Object.keys(majorsData)[index];
+            const oldMajor = Object.keys(majorsData[currentAdminLevel])[index];
             const newMajor = majorInputs[index].value.trim();
             const newRemaining = parseInt(remainingInputs[index].value);
             
@@ -511,19 +660,19 @@
             
             // 如果专业名称改变了，需要先删除旧的再添加新的
             if (oldMajor !== newMajor) {
-                delete majorsData[oldMajor];
+                delete majorsData[currentAdminLevel][oldMajor];
             }
             
-            majorsData[newMajor] = { remaining: newRemaining };
+            majorsData[currentAdminLevel][newMajor] = { remaining: newRemaining };
             
             alert('修改已保存');
         }
 
         // 删除专业
         function removeMajor(index) {
-            const major = Object.keys(majorsData)[index];
+            const major = Object.keys(majorsData[currentAdminLevel])[index];
             if (confirm(`确定要删除专业 "${major}" 吗？`)) {
-                delete majorsData[major];
+                delete majorsData[currentAdminLevel][major];
                 renderMajorEditList();
             }
         }
@@ -531,7 +680,7 @@
         // 添加新专业
         function addNewMajor() {
             const container = document.getElementById('majorEditList');
-            const newIndex = Object.keys(majorsData).length;
+            const newIndex = Object.keys(majorsData[currentAdminLevel]).length;
             
             const item = document.createElement('div');
             item.className = 'major-edit-item';
@@ -572,7 +721,7 @@
             }
             
             if (!hasError) {
-                majorsData = newMajorsData;
+                majorsData[currentAdminLevel] = newMajorsData;
                 alert('所有更改已保存');
             }
         }
