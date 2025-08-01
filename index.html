@@ -194,6 +194,29 @@
         .close:hover {
             color: black;
         }
+		/* 管理员层次选择器样式 */
+		.admin-level-selector {
+		    text-align: center;
+		    margin-bottom: 20px;
+		}
+		.admin-level-selector button {
+		    padding: 10px 20px;
+		    margin: 0 10px;
+		    background-color: #ddd;
+		    border: none;
+		    border-radius: 5px;
+		    cursor: pointer;
+		    font-size: 16px;
+		    transition: all 0.3s ease;
+		}
+		.admin-level-selector button.active.middle {
+		    background-color: #3498db;
+		    color: white;
+		}
+		.admin-level-selector button.active.high {
+		    background-color: #e74c3c;
+		    color: white;
+		}
         /* 管理员按钮样式 */
         .admin-btn {
             position: fixed;
@@ -352,14 +375,14 @@
         </div>
         
         <!-- 管理员按钮 -->
-        <button class="admin-btn" onclick="toggleAdminPanel()">管理员</button>
+        <button id="adminButton" class="admin-btn" onclick="toggleAdminPanel()">管理员</button>
         
         <!-- 管理员面板 -->
         <div id="adminPanel" class="admin-panel">
             <h2>专业名额管理</h2>
             <div class="admin-level-selector">
-                <button id="adminMiddleTechBtn" class="active" onclick="switchAdminLevel('middle')">中技层次</button>
-                <button id="adminHighTechBtn" onclick="switchAdminLevel('high')">高技层次</button>
+                <button id="adminMiddleTechBtn" class="middle active" onclick="switchAdminLevel('middle')">中技层次</button>
+                <button id="adminHighTechBtn" class="high" onclick="switchAdminLevel('high')">高技层次</button>
             </div>
             <div id="majorEditList">
                 <!-- 专业编辑列表将在这里动态生成 -->
@@ -487,10 +510,28 @@
         // 切换管理员面板层次
         function switchAdminLevel(level) {
             currentAdminLevel = level;
+            // 移除所有按钮的active类
             document.getElementById('adminMiddleTechBtn').classList.remove('active');
             document.getElementById('adminHighTechBtn').classList.remove('active');
-            document.getElementById('admin' + level.charAt(0).toUpperCase() + level.slice(1) + 'TechBtn').classList.add('active');
+                    
+            // 给当前选中的按钮添加active类
+            const activeBtn = document.getElementById('admin' + level.charAt(0).toUpperCase() + level.slice(1) + 'TechBtn');
+            activeBtn.classList.add('active');
+                    
             renderMajorEditList();
+        }
+        
+        // 修改toggleAdminPanel函数，初始化时设置正确按钮状态
+        function toggleAdminPanel() {
+            const panel = document.getElementById('adminPanel');
+            if (panel.style.display === 'block') {
+                panel.style.display = 'none';
+            } else {
+                panel.style.display = 'block';
+                // 确保当前选中按钮有正确样式
+                switchAdminLevel(currentAdminLevel);
+                renderMajorEditList();
+            }
         }
 
         // 显示特定院系的专业列表
@@ -545,11 +586,15 @@
                 
                 document.getElementById('searchResultContent').innerHTML = resultHTML;
                 document.getElementById('searchModal').style.display = 'block';
+                // 隐藏管理员按钮
+                document.getElementById('adminButton').style.display = 'none';
             } else {
                 document.getElementById('searchResultTitle').innerHTML = 
                     `<span style="color: red;">未找到</span>`;
                 document.getElementById('searchResultContent').textContent = `未找到${currentLevel === 'middle' ? '中技' : '高技'}层次匹配的专业，请检查输入是否正确`;
                 document.getElementById('searchModal').style.display = 'block';
+                // 隐藏管理员按钮
+                document.getElementById('adminButton').style.display = 'none';
             }
         }
 
@@ -574,16 +619,22 @@
             document.getElementById('detailResultContent').innerHTML = detailHTML;
             closeModal(); // 关闭搜索结果模态框
             document.getElementById('detailModal').style.display = 'block';
+            // 隐藏管理员按钮
+            document.getElementById('adminButton').style.display = 'none';
         }
 
         // 关闭搜索结果模态框
         function closeModal() {
             document.getElementById('searchModal').style.display = 'none';
+            // 显示管理员按钮
+            document.getElementById('adminButton').style.display = 'block';
         }
 
         // 关闭详情模态框
         function closeDetailModal() {
             document.getElementById('detailModal').style.display = 'none';
+            // 显示管理员按钮
+            document.getElementById('adminButton').style.display = 'block';
         }
 
         // 点击模态框外部关闭
@@ -594,9 +645,13 @@
             
             if (event.target == modal) {
                 modal.style.display = 'none';
+                // 显示管理员按钮
+                document.getElementById('adminButton').style.display = 'block';
             }
             if (event.target == detailModal) {
                 detailModal.style.display = 'none';
+                // 显示管理员按钮
+                document.getElementById('adminButton').style.display = 'block';
             }
             if (event.target == adminPanel) {
                 // 不处理，防止点击面板内部时关闭
